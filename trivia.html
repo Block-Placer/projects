@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TRIVIUM — A Quiz of Knowledge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET ─────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --parchment:  #f5f0e8;
+  --cream:      #faf7f2;
+  --ink:        #1a1510;
+  --ink-mid:    #2d2620;
+  --ink-light:  #5a4f42;
+  --gold:       #b8922a;
+  --gold-light: #d4aa50;
+  --gold-pale:  #e8d5a0;
+  --rule:       rgba(184,146,42,0.25);
+  --rule-dark:  rgba(184,146,42,0.5);
+  --correct:    #2d5a3d;
+  --wrong:      #7a2a2a;
+  --correct-bg: rgba(45,90,61,0.07);
+  --wrong-bg:   rgba(122,42,42,0.07);
+  --serif:      'Cormorant Garamond', Georgia, serif;
+  --display:    'Cinzel', 'Trajan Pro', serif;
+  --fell:       'IM Fell English', Georgia, serif;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: var(--serif);
+  min-height: 100vh;
+  font-size: 17px;
+  line-height: 1.6;
+  /* subtle paper texture via layered gradients */
+  background-image:
+    radial-gradient(ellipse at 20% 0%,  rgba(184,146,42,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%,rgba(184,146,42,0.05) 0%, transparent 60%),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 80px,
+      rgba(184,146,42,0.015) 80px,
+      rgba(184,146,42,0.015) 81px
+    );
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────── */
+#app{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3.5rem 1.5rem 5rem;
+}
+
+/* ── MASTHEAD ────────────────────────────────────────────────────────── */
+.masthead{
+  text-align: center;
+  margin-bottom: 3.5rem;
+  position: relative;
+}
+
+.masthead-rule{
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+.masthead-rule::before,
+.masthead-rule::after{
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.masthead-ornament{
+  color: var(--gold);
+  font-size: 1.1rem;
+  letter-spacing: 0.3em;
+}
+
+.masthead-title{
+  font-family: var(--display);
+  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+
+.masthead-subtitle{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--ink-light);
+  letter-spacing: 0.08em;
+}
+
+.masthead-sub-rule{
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+.masthead-sub-rule::before,
+.masthead-sub-rule::after{
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--rule-dark), transparent);
+}
+.masthead-sub-rule span{
+  font-family: var(--display);
+  font-size: 0.5rem;
+  letter-spacing: 0.5em;
+  color: var(--gold);
+}
+
+/* ── SCORE BAR ───────────────────────────────────────────────────────── */
+#score-bar{
+  display: none;
+  gap: 0;
+  margin-bottom: 2.8rem;
+  border: 1px solid var(--rule-dark);
+  background: var(--cream);
+}
+#score-bar.visible{ display: flex; }
+
+.score-cell{
+  padding: 0.6rem 2rem;
+  text-align: center;
+  border-right: 1px solid var(--rule);
+}
+.score-cell:last-child{ border-right: none; }
+
+.score-val{
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--gold);
+  line-height: 1;
+}
+.score-lbl{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 0.72rem;
+  color: var(--ink-light);
+  letter-spacing: 0.1em;
+  margin-top: 0.1rem;
+}
+
+/* ── SCREENS ─────────────────────────────────────────────────────────── */
+.screen{ display: none; width: 100%; max-width: 680px; }
+.screen.active{ display: block; animation: fadeUp 0.4s ease; }
+
+@keyframes fadeUp{
+  from{ opacity:0; transform:translateY(14px); }
+  to  { opacity:1; transform:translateY(0); }
+}
+
+/* ── SECTION HEADING ────────────────────────────────────────────────── */
+.section-heading{
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.section-heading-text{
+  font-family: var(--display);
+  font-size: 0.65rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ── TOPIC GRID ──────────────────────────────────────────────────────── */
+.topic-grid{
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule-dark);
+  margin-bottom: 2.5rem;
+}
+
+.topic-card{
+  background: var(--cream);
+  padding: 1.2rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.18s;
+  position: relative;
+  user-select: none;
+}
+
+.topic-card:hover{
+  background: #ede8df;
+}
+
+.topic-card.selected{
+  background: var(--ink);
+}
+
+.topic-card.selected .topic-emoji-wrap{ filter: grayscale(1) brightness(2); }
+.topic-card.selected .topic-lbl{ color: var(--gold-light); }
+
+.topic-emoji-wrap{
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: filter 0.18s;
+}
+
+.topic-lbl{
+  font-family: var(--display);
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  text-align: center;
+  transition: color 0.18s;
+}
+
+/* ── BUTTON ──────────────────────────────────────────────────────────── */
+.btn-primary{
+  font-family: var(--display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  padding: 1rem 3rem;
+  background: var(--ink);
+  color: var(--gold-light);
+  border: 1px solid var(--gold);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  display: block;
+  margin: 0 auto;
+  position: relative;
+}
+
+.btn-primary::before,
+.btn-primary::after{
+  content: '◆';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.4rem;
+  color: var(--gold);
+}
+.btn-primary::before{ left: 1.2rem; }
+.btn-primary::after { right: 1.2rem; }
+
+.btn-primary:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary:not(:disabled):hover{
+  background: var(--ink-mid);
+  color: var(--gold-light);
+}
+
+/* ── LOADING ─────────────────────────────────────────────────────────── */
+#loading{
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 4rem 0;
+}
+#loading.active{ display: flex; animation: none; }
+
+.loading-ornament{
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.45em;
+  color: var(--gold);
+  text-transform: uppercase;
+  animation: loadPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes loadPulse{
+  0%,100%{ opacity:0.4; }
+  50%{ opacity:1; }
+}
+
+/* ── GAME SCREEN ─────────────────────────────────────────────────────── */
+
+/* progress */
+.progress-wrap{
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.8rem;
+}
+.progress-track{
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+  position: relative;
+}
+.progress-fill{
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.5s ease;
+}
+.progress-label{
+  font-family: var(--display);
+  font-size: 0.55rem;
+  letter-spacing: 0.25em;
+  color: var(--gold);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* question header */
+.q-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.q-num{
+  font-family: var(--display);
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  color: var(--ink-light);
+  text-transform: uppercase;
+}
+
+.q-diff{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 0.82rem;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid;
+}
+.diff-Easy  { color: #2d5a3d; border-color: rgba(45,90,61,0.35); background:rgba(45,90,61,0.05); }
+.diff-Medium{ color: #7a5a1a; border-color: rgba(122,90,26,0.35); background:rgba(122,90,26,0.05); }
+.diff-Hard  { color: #7a2a2a; border-color: rgba(122,42,42,0.35); background:rgba(122,42,42,0.05); }
+
+/* question card */
+.q-card{
+  background: var(--cream);
+  border: 1px solid var(--rule-dark);
+  padding: 2rem 2.2rem;
+  margin-bottom: 1.4rem;
+  position: relative;
+}
+
+/* corner ornaments */
+.q-card::before,
+.q-card::after{
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--gold);
+  border-style: solid;
+}
+.q-card::before{ top: -1px; left: -1px;  border-width: 1px 0 0 1px; }
+.q-card::after { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+.q-text{
+  font-family: var(--fell);
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* answers */
+.answers{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule-dark);
+}
+
+.ans-btn{
+  background: var(--cream);
+  border: none;
+  padding: 0.9rem 1.1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink-mid);
+  line-height: 1.4;
+}
+
+.ans-btn:not(:disabled):hover{
+  background: #ede8df;
+}
+
+.ans-btn:disabled{ cursor: default; }
+
+.ans-btn.correct{
+  background: var(--correct-bg);
+  color: var(--correct);
+}
+.ans-btn.wrong{
+  background: var(--wrong-bg);
+  color: var(--wrong);
+}
+.ans-btn.reveal{
+  background: var(--cream);
+  color: rgba(90,79,66,0.4);
+}
+
+@keyframes correctFlash{
+  0%  { background: rgba(45,90,61,0.22); }
+  100%{ background: var(--correct-bg); }
+}
+@keyframes wrongShake{
+  0%,100%{ transform:translateX(0); }
+  25%    { transform:translateX(-5px); }
+  75%    { transform:translateX(5px); }
+}
+
+.ans-btn.correct{ animation: correctFlash 0.35s ease; }
+.ans-btn.wrong  { animation: wrongShake  0.3s ease; }
+
+.ans-key{
+  font-family: var(--display);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--rule-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+  color: var(--ink-light);
+  background: var(--parchment);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.ans-btn.correct .ans-key{
+  border-color: var(--correct);
+  background: rgba(45,90,61,0.12);
+  color: var(--correct);
+}
+.ans-btn.wrong .ans-key{
+  border-color: var(--wrong);
+  background: rgba(122,42,42,0.12);
+  color: var(--wrong);
+}
+.ans-btn.reveal .ans-key{
+  opacity: 0.35;
+}
+
+/* feedback */
+.feedback{
+  display: none;
+  margin-top: 1.2rem;
+  padding: 0.9rem 1.4rem;
+  border: 1px solid;
+  gap: 1rem;
+  align-items: flex-start;
+  animation: fadeIn 0.28s ease;
+}
+.feedback.visible{ display: flex; }
+.feedback.correct-fb{
+  border-color: rgba(45,90,61,0.3);
+  background: var(--correct-bg);
+}
+.feedback.wrong-fb{
+  border-color: rgba(122,42,42,0.3);
+  background: var(--wrong-bg);
+}
+
+.fb-verdict{
+  font-family: var(--display);
+  font-size: 0.58rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 0.2rem;
+}
+.correct-fb .fb-verdict{ color: var(--correct); }
+.wrong-fb   .fb-verdict{ color: var(--wrong); }
+
+.fb-text{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-light);
+  line-height: 1.45;
+}
+
+@keyframes fadeIn{
+  from{ opacity:0; transform:translateY(5px); }
+  to  { opacity:1; transform:translateY(0); }
+}
+
+/* nav row */
+.nav-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.btn-ghost{
+  font-family: var(--display);
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--rule-dark);
+  color: var(--ink-light);
+  padding: 0.65rem 1.4rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-ghost:hover{
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.btn-advance{
+  font-family: var(--display);
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  background: var(--ink);
+  border: 1px solid var(--gold);
+  color: var(--gold-light);
+  padding: 0.65rem 1.6rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: none;
+}
+.btn-advance.visible{ display: block; }
+.btn-advance:hover{ background: var(--ink-mid); }
+
+/* ── RESULTS ─────────────────────────────────────────────────────────── */
+#results{ text-align: center; }
+
+.res-seal{
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.8rem;
+  position: relative;
+  background: var(--cream);
+}
+.res-seal::before{
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-dark);
+}
+.res-seal::after{
+  content: '';
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+}
+
+.res-num{
+  font-family: var(--display);
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+.res-denom{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  position: relative;
+  z-index: 1;
+}
+
+.res-title{
+  font-family: var(--display);
+  font-size: clamp(1.4rem,4vw,2rem);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.res-grade{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--gold);
+  margin-bottom: 2.2rem;
+}
+
+.res-rule{
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 1.5rem 0;
+}
+
+.res-stats{
+  display: flex;
+  gap: 0;
+  justify-content: center;
+  background: var(--rule);
+  border: 1px solid var(--rule-dark);
+  margin: 0 auto 2.5rem;
+  max-width: 400px;
+}
+.stat-cell{
+  flex: 1;
+  background: var(--cream);
+  padding: 1rem 1.2rem;
+  border-right: 1px solid var(--rule);
+  text-align: center;
+}
+.stat-cell:last-child{ border-right: none; }
+
+.stat-num{
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.stat-lbl{
+  font-family: var(--fell);
+  font-style: italic;
+  font-size: 0.75rem;
+  color: var(--ink-light);
+  margin-top: 0.15rem;
+}
+
+.res-btns{
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────────── */
+@media(max-width:600px){
+  .topic-grid{ grid-template-columns:repeat(2,1fr); }
+  .answers{ grid-template-columns:1fr; }
+  .res-stats{ max-width:100%; }
+  .q-card{ padding:1.5rem 1.3rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-rule">
+      <div class="masthead-ornament">✦ ✦ ✦</div>
+    </div>
+    <div class="masthead-title">TRIVIUM</div>
+    <div class="masthead-subtitle">A Compendium of General Knowledge</div>
+    <div class="masthead-sub-rule"><span>✦</span></div>
+  </header>
+
+  <!-- SCORE BAR -->
+  <div id="score-bar">
+    <div class="score-cell">
+      <div class="score-val" id="sb-correct">0</div>
+      <div class="score-lbl">Correct</div>
+    </div>
+    <div class="score-cell">
+      <div class="score-val" id="sb-wrong">0</div>
+      <div class="score-lbl">Incorrect</div>
+    </div>
+    <div class="score-cell">
+      <div class="score-val" id="sb-pct">—</div>
+      <div class="score-lbl">Accuracy</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="home" class="screen active">
+    <div class="section-heading">
+      <div class="section-heading-text">Select a Discipline</div>
+    </div>
+    <div class="topic-grid" id="topic-grid"></div>
+    <button class="btn-primary" id="btn-start" disabled>Commence the Examination</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="loading-ornament">Preparing your examination &nbsp;· · ·</div>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-label" id="progress-label">I of V</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <div class="q-header">
+      <span class="q-num" id="q-num">Question the First</span>
+      <span class="q-diff" id="q-diff">Easy</span>
+    </div>
+
+    <div class="q-card">
+      <p class="q-text" id="q-text"></p>
+    </div>
+
+    <div class="answers" id="answers"></div>
+
+    <div class="feedback" id="feedback">
+      <span class="fb-verdict" id="fb-verdict"></span>
+      <span class="fb-text" id="fb-text"></span>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-ghost" onclick="goHome()">← Return to Index</button>
+      <button class="btn-advance" id="btn-next" onclick="nextQuestion()">Proceed →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="screen">
+    <div class="res-title">Examination Complete</div>
+
+    <div class="res-rule"></div>
+
+    <div class="res-seal">
+      <div class="res-num" id="res-num">0</div>
+      <div class="res-denom" id="res-denom">of V correct</div>
+    </div>
+
+    <div class="res-grade" id="res-grade"></div>
+
+    <div class="res-stats">
+      <div class="stat-cell">
+        <div class="stat-num" id="res-correct" style="color:var(--correct)">0</div>
+        <div class="stat-lbl">Correct</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="res-wrong" style="color:var(--wrong)">0</div>
+        <div class="stat-lbl">Incorrect</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num" id="res-pct" style="color:var(--gold)">—</div>
+        <div class="stat-lbl">Accuracy</div>
+      </div>
+    </div>
+
+    <div class="res-rule"></div>
+
+    <div class="res-btns">
+      <button class="btn-ghost" onclick="goHome()">Change Discipline</button>
+      <button class="btn-primary" onclick="playAgain()" style="margin:0">Sit Again</button>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+/* ── DATA ─────────────────────────────────────────────────────────── */
+const TOPICS = [
+  {id:"science",     label:"Sciences",     emoji:"🔬"},
+  {id:"history",     label:"History",      emoji:"🏛️"},
+  {id:"geography",   label:"Geography",    emoji:"🌍"},
+  {id:"pop-culture", label:"Pop Culture",  emoji:"🎬"},
+  {id:"sports",      label:"Sports",       emoji:"⚽"},
+  {id:"technology",  label:"Technology",   emoji:"💻"},
+  {id:"food",        label:"Food & Drink", emoji:"🍽️"},
+  {id:"mythology",   label:"Mythology",    emoji:"⚡"},
+];
+
+const ORDINALS = ["the First","the Second","the Third","the Fourth","the Fifth",
+                   "the Sixth","the Seventh","the Eighth","the Ninth","the Tenth"];
+const ROMAN    = ["I","II","III","IV","V","VI","VII","VIII","IX","X"];
+const KEYS     = ["A","B","C","D"];
+const PER_ROUND = 5;
+
+const Q = {
+  science:[
+    {q:"What is the chemical symbol for gold?",                             o:["Go","Gd","Au","Ag"],                                                        a:2,d:"Easy",  e:"Au derives from the Latin word aurum, the ancient name for gold."},
+    {q:"How many bones are present in the adult human body?",               o:["206","212","198","226"],                                                     a:0,d:"Easy",  e:"The adult skeleton comprises 206 bones; infants are born with roughly 270, which fuse over time."},
+    {q:"Which planet is commonly known as the Red Planet?",                 o:["Venus","Jupiter","Saturn","Mars"],                                           a:3,d:"Easy",  e:"Mars appears red on account of iron oxide — rust — that covers much of its surface."},
+    {q:"At approximately what speed does light travel in a vacuum?",        o:["300,000 km/s","150,000 km/s","450,000 km/s","600,000 km/s"],                 a:0,d:"Medium",e:"Light travels at precisely 299,792 kilometres per second in a vacuum."},
+    {q:"Which organelle is regarded as the powerhouse of the cell?",        o:["Nucleus","Ribosome","Mitochondria","Golgi apparatus"],                       a:2,d:"Easy",  e:"The mitochondria generate ATP, the principal energy currency of the cell."},
+    {q:"Which element occupies atomic number 1 on the periodic table?",     o:["Helium","Oxygen","Hydrogen","Carbon"],                                       a:2,d:"Easy",  e:"Hydrogen is the lightest and most abundant element in the observable universe."},
+    {q:"What is the hardest naturally occurring substance on Earth?",        o:["Quartz","Diamond","Titanium","Corundum"],                                    a:1,d:"Easy",  e:"Diamond attains a perfect score of 10 on the Mohs hardness scale."},
+    {q:"Which gas do plants absorb during the process of photosynthesis?",  o:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],                             a:2,d:"Easy",  e:"Plants absorb carbon dioxide and release oxygen as a byproduct of photosynthesis."},
+    {q:"What is the most abundant gas in Earth's atmosphere?",              o:["Oxygen","Carbon dioxide","Argon","Nitrogen"],                                a:3,d:"Medium",e:"Nitrogen constitutes approximately 78 per cent of the Earth's atmosphere."},
+    {q:"Which region of the brain governs balance and coordination?",       o:["Cerebrum","Cerebellum","Brainstem","Hippocampus"],                           a:1,d:"Medium",e:"The cerebellum is responsible for coordinating voluntary movement and maintaining equilibrium."},
+    {q:"How many chromosomes does the typical human possess?",              o:["23","44","46","48"],                                                         a:2,d:"Medium",e:"Humans ordinarily possess 46 chromosomes, arranged into 23 pairs."},
+    {q:"What is the SI unit of electrical resistance?",                     o:["Watt","Volt","Ampere","Ohm"],                                                a:3,d:"Medium",e:"The ohm (Ω) quantifies electrical resistance and is named in honour of Georg Simon Ohm."},
+    {q:"Which planet in our solar system possesses the greatest number of moons?", o:["Jupiter","Saturn","Uranus","Neptune"],                               a:1,d:"Hard",  e:"Saturn holds the record, with over 140 confirmed moons as of the year 2024."},
+    {q:"What is the half-life of the isotope Carbon-14?",                   o:["1,400 years","5,730 years","14,000 years","570 years"],                      a:1,d:"Hard",  e:"Carbon-14 has a half-life of 5,730 years, rendering it invaluable for radiometric dating."},
+    {q:"Which subatomic particle carries no electric charge?",              o:["Proton","Electron","Neutron","Positron"],                                    a:2,d:"Medium",e:"The neutron is electrically neutral; protons carry a positive charge and electrons a negative."},
+  ],
+  history:[
+    {q:"In which year did the Second World War conclude?",                  o:["1943","1944","1945","1946"],                                                 a:2,d:"Easy",  e:"The Second World War ended in 1945 — V-E Day on 8 May and V-J Day on 2 September."},
+    {q:"Who served as the inaugural President of the United States?",       o:["John Adams","Thomas Jefferson","Benjamin Franklin","George Washington"],     a:3,d:"Easy",  e:"George Washington held the presidency from 1789 to 1797, the first under the Constitution."},
+    {q:"Which of the Seven Wonders of the Ancient World stood in Alexandria?", o:["Colossus of Rhodes","Lighthouse of Alexandria","Hanging Gardens","Temple of Artemis"], a:1,d:"Medium",e:"The Lighthouse of Alexandria, or Pharos, was amongst the tallest structures of the ancient world."},
+    {q:"In which year did the Berlin Wall fall?",                           o:["1987","1988","1989","1991"],                                                 a:2,d:"Easy",  e:"The Berlin Wall fell on 9 November 1989, signalling the effective end of the Cold War division of Europe."},
+    {q:"Who led the revolutionary movement that overthrew Batista in Cuba?",o:["Che Guevara","Fidel Castro","Raúl Castro","Camilo Cienfuegos"],              a:1,d:"Medium",e:"Fidel Castro commanded the forces that brought about the Cuban Revolution in 1959."},
+    {q:"Which empire did Genghis Khan establish and rule?",                 o:["Ottoman","Mongol","Persian","Roman"],                                        a:1,d:"Easy",  e:"Genghis Khan founded the Mongol Empire, the largest contiguous land empire in recorded history."},
+    {q:"In which year did the RMS Titanic founder?",                        o:["1910","1911","1912","1913"],                                                 a:2,d:"Easy",  e:"The RMS Titanic sank on 15 April 1912 during her maiden voyage across the Atlantic."},
+    {q:"Who authored the Ninety-Five Theses that precipitated the Protestant Reformation?", o:["John Calvin","King Henry VIII","Martin Luther","Erasmus"],  a:2,d:"Medium",e:"Martin Luther affixed his Ninety-Five Theses to the church door at Wittenberg in 1517."},
+    {q:"Which nation was first to extend the right of suffrage to women?",  o:["United Kingdom","United States","Sweden","New Zealand"],                    a:3,d:"Hard",  e:"New Zealand became the first self-governing territory to grant women the right to vote, in 1893."},
+    {q:"Which ancient civilisation constructed the citadel of Machu Picchu?", o:["Aztec","Maya","Inca","Olmec"],                                            a:2,d:"Easy",  e:"The Inca Empire constructed Machu Picchu during the fifteenth century."},
+    {q:"In which year was the Battle of Hastings fought?",                  o:["1042","1066","1086","1100"],                                                 a:1,d:"Medium",e:"The Battle of Hastings, on 14 October 1066, saw William the Conqueror defeat King Harold II."},
+    {q:"Who was Napoleon Bonaparte's first consort?",                       o:["Marie-Louise","Joséphine de Beauharnais","Pauline Bonaparte","Désirée Clary"], a:1,d:"Medium",e:"Joséphine de Beauharnais was Napoleon's first wife; he later dissolved the marriage in favour of Marie-Louise."},
+    {q:"Which American President promulgated the Emancipation Proclamation?", o:["Ulysses S. Grant","Andrew Johnson","Abraham Lincoln","James Buchanan"],   a:2,d:"Easy",  e:"President Abraham Lincoln issued the Emancipation Proclamation on 1 January 1863."},
+    {q:"What was the name of the vessel that transported the Pilgrim Fathers to America in 1620?", o:["Santa María","Mayflower","Endeavour","Golden Hind"], a:1,d:"Easy",  e:"The Mayflower carried 102 passengers from England to Plymouth, Massachusetts, in 1620."},
+    {q:"In which city was the Archduke Franz Ferdinand assassinated in 1914?", o:["Vienna","Belgrade","Sarajevo","Zagreb"],                                  a:2,d:"Medium",e:"Archduke Franz Ferdinand was shot by Gavrilo Princip in Sarajevo on 28 June 1914, precipitating the First World War."},
+  ],
+  geography:[
+    {q:"What is the longest river in the world?",                           o:["Amazon","Yangtze","Mississippi","Nile"],                                     a:3,d:"Easy",  e:"The Nile extends approximately 6,650 kilometres through north-eastern Africa."},
+    {q:"What is the capital city of the Commonwealth of Australia?",        o:["Sydney","Melbourne","Canberra","Brisbane"],                                  a:2,d:"Medium",e:"Canberra was established as a compromise between the rival claims of Sydney and Melbourne."},
+    {q:"Which nation contains the greatest number of natural lakes?",       o:["Russia","Brazil","United States","Canada"],                                  a:3,d:"Hard",  e:"Canada contains approximately sixty per cent of the world's natural lakes — in excess of 879,000."},
+    {q:"Which is the smallest sovereign state in the world by area?",       o:["Monaco","San Marino","Vatican City","Liechtenstein"],                        a:2,d:"Easy",  e:"Vatican City encompasses a mere 0.44 square kilometres, rendering it the world's smallest country."},
+    {q:"On which continent does the Sahara Desert lie?",                    o:["Asia","Australia","South America","Africa"],                                 a:3,d:"Easy",  e:"The Sahara, the world's largest hot desert, extends across eleven countries of North Africa."},
+    {q:"What is the capital city of Canada?",                               o:["Toronto","Vancouver","Ottawa","Montréal"],                                   a:2,d:"Easy",  e:"Ottawa has served as the capital of Canada since 1857, when Queen Victoria made the selection."},
+    {q:"Which mountain range traditionally forms the boundary between Europe and Asia?", o:["Alps","Carpathians","Ural Mountains","Caucasus Mountains"],     a:2,d:"Medium",e:"The Ural Mountains are conventionally regarded as the geographical boundary separating Europe from Asia."},
+    {q:"Which ocean is the largest on Earth?",                              o:["Atlantic","Indian","Arctic","Pacific"],                                      a:3,d:"Easy",  e:"The Pacific Ocean spans more than 165 million square kilometres, comprising nearly half of Earth's total ocean area."},
+    {q:"Which country possesses the longest coastline in the world?",       o:["Russia","Australia","Norway","Canada"],                                      a:3,d:"Hard",  e:"Canada's coastline measures in excess of 202,000 kilometres, the longest of any nation."},
+    {q:"What is the capital city of Brazil?",                               o:["São Paulo","Rio de Janeiro","Brasília","Salvador"],                          a:2,d:"Medium",e:"Brasília supplanted Rio de Janeiro as the capital of Brazil in 1960, having been purpose-built for the role."},
+    {q:"The Amazon rainforest is situated predominantly within which country?", o:["Peru","Colombia","Venezuela","Brazil"],                                  a:3,d:"Easy",  e:"Approximately sixty per cent of the Amazon basin lies within the borders of Brazil."},
+    {q:"Which is the deepest lake in the world?",                           o:["Caspian Sea","Lake Superior","Lake Baikal","Lake Tanganyika"],               a:2,d:"Medium",e:"Lake Baikal in Siberia descends to a depth of 1,642 metres and holds roughly one fifth of the world's fresh surface water."},
+    {q:"To which nation do the Galápagos Islands belong?",                  o:["Peru","Chile","Colombia","Ecuador"],                                         a:3,d:"Medium",e:"The Galápagos Islands are a province of Ecuador, situated some 906 kilometres off its western coast."},
+    {q:"Which African nation harbours the greatest number of ancient pyramids?", o:["Egypt","Libya","Sudan","Ethiopia"],                                     a:2,d:"Hard",  e:"Sudan contains upwards of 200 ancient pyramids, constructed by the Nubian kingdoms of Kush — more than Egypt."},
+    {q:"What is the highest uninterrupted waterfall in the world?",         o:["Niagara Falls","Victoria Falls","Angel Falls","Iguazú Falls"],               a:2,d:"Medium",e:"Angel Falls in Venezuela plunges 979 metres, the greatest uninterrupted vertical drop of any waterfall."},
+  ],
+  "pop-culture":[
+    {q:"Which musical ensemble performed 'Bohemian Rhapsody'?",             o:["The Beatles","Led Zeppelin","Queen","The Rolling Stones"],                   a:2,d:"Easy",  e:"Bohemian Rhapsody was written by Freddie Mercury and released by Queen in 1975."},
+    {q:"In which motion picture does the phrase 'I'll be back' originate?", o:["Predator","Total Recall","The Terminator","Commando"],                       a:2,d:"Easy",  e:"Arnold Schwarzenegger delivers the celebrated line in James Cameron's The Terminator (1984)."},
+    {q:"Which video game holds the distinction of the highest global sales?", o:["Tetris","Grand Theft Auto V","Minecraft","Wii Sports"],                    a:2,d:"Medium",e:"Minecraft has sold in excess of 300 million copies worldwide, making it the best-selling video game in history."},
+    {q:"Which actor portrayed Tony Stark in the Marvel Cinematic Universe?", o:["Chris Evans","Mark Ruffalo","Robert Downey Jr.","Chris Pratt"],              a:2,d:"Easy",  e:"Robert Downey Jr. embodied the role of Tony Stark beginning with Iron Man (2008)."},
+    {q:"Which television series is set in the fictional town of Hawkins, Indiana?", o:["Dark","The OA","Stranger Things","Twin Peaks"],                      a:2,d:"Easy",  e:"Stranger Things, produced by Netflix from 2016, unfolds in the fictional town of Hawkins, Indiana."},
+    {q:"In which year was the first iPhone unveiled to the public?",         o:["2005","2006","2007","2008"],                                                a:2,d:"Medium",e:"Steve Jobs introduced the original iPhone at the Macworld Conference on 9 January 2007."},
+    {q:"Which recording artist holds the record for the greatest number of Grammy Awards?", o:["Adele","Stevie Wonder","Georg Solti","Beyoncé"],              a:3,d:"Hard",  e:"Beyoncé holds the record with 32 Grammy Awards as of the year 2024."},
+    {q:"What is the name of the fictional kingdom in Disney's Frozen?",     o:["Agrabah","Arendelle","Motunui","Eldorado"],                                  a:1,d:"Easy",  e:"Arendelle is the Scandinavian-inspired kingdom at the centre of Disney's Frozen (2013)."},
+    {q:"Which novel gave rise to the phrase 'Big Brother is watching you'?", o:["Brave New World","Fahrenheit 451","Nineteen Eighty-Four","We"],             a:2,d:"Medium",e:"George Orwell coined the phrase in his celebrated dystopian novel Nineteen Eighty-Four, published in 1949."},
+    {q:"Who directed the film Pulp Fiction?",                               o:["Martin Scorsese","David Fincher","Quentin Tarantino","Spike Lee"],           a:2,d:"Medium",e:"Quentin Tarantino wrote and directed Pulp Fiction, which was released in 1994."},
+    {q:"Which streaming platform produced the South Korean series Squid Game?", o:["Hulu","Disney+","Amazon Prime Video","Netflix"],                         a:3,d:"Easy",  e:"Squid Game was produced and distributed by Netflix, first broadcast in September 2021."},
+    {q:"At what address does the fictional detective Sherlock Holmes reside?", o:["221 Baker Street","221A Baker Street","221B Baker Street","221C Baker Street"], a:2,d:"Easy",e:"Sherlock Holmes, the creation of Sir Arthur Conan Doyle, resides at 221B Baker Street, London."},
+    {q:"Which film holds the record as the highest-grossing of all time (unadjusted for inflation)?", o:["Titanic","Avengers: Endgame","Avatar","Star Wars: The Force Awakens"], a:2,d:"Medium",e:"Avatar, following its re-release in 2022, has grossed in excess of 2.9 billion US dollars worldwide."},
+    {q:"Which concert tour became the highest-grossing in recorded history?", o:["Beyoncé Renaissance","Taylor Swift Eras Tour","Adele Weekends with Adele","Coldplay Music of the Spheres"], a:1,d:"Easy",e:"Taylor Swift's Eras Tour (2023–2024) surpassed all previous concert tours in total gross revenue."},
+    {q:"By what name is Harry Potter's pet owl known?",                     o:["Errol","Pigwidgeon","Crookshanks","Hedwig"],                                 a:3,d:"Easy",  e:"Hedwig is Harry Potter's faithful snowy owl, presented to him by Rubeus Hagrid as a birthday gift."},
+  ],
+  sports:[
+    {q:"How many players does each side field at one time in association football?", o:["9","10","11","12"],                                                  a:2,d:"Easy",  e:"Each association football team fields eleven players, including the goalkeeper."},
+    {q:"In which country did the ancient Olympic Games originate?",          o:["Rome","Egypt","Greece","Persia"],                                            a:2,d:"Easy",  e:"The ancient Olympic Games were held at Olympia, Greece, from approximately 776 BC."},
+    {q:"What is the highest possible break in a single frame of snooker?",   o:["147","155","150","142"],                                                     a:0,d:"Medium",e:"A maximum break of 147 is achieved by potting all fifteen reds each accompanied by a black, followed by all six colours."},
+    {q:"Which nation has claimed the most FIFA World Cup titles?",           o:["Germany","Argentina","Italy","Brazil"],                                      a:3,d:"Easy",  e:"Brazil has been crowned world champions on five occasions: 1958, 1962, 1970, 1994, and 2002."},
+    {q:"What is the official distance of a marathon race?",                  o:["26.2 miles","24 miles","30 kilometres","40 kilometres"],                    a:0,d:"Medium",e:"A marathon covers 26 miles and 385 yards (42.195 km), a distance standardised at the 1908 London Olympics."},
+    {q:"What is the value, in points, of a free throw in basketball?",       o:["2","3","1","½"],                                                            a:2,d:"Easy",  e:"Each successful free throw awards one point to the shooting side."},
+    {q:"In which American state was the sport of basketball invented?",      o:["New York","Illinois","Massachusetts","Ohio"],                                a:2,d:"Medium",e:"James Naismith devised basketball in December 1891 at Springfield, Massachusetts."},
+    {q:"At which celebrated venue is the lawn tennis Grand Slam held annually?", o:["Roland Garros","Melbourne Park","Flushing Meadows","Wimbledon"],        a:3,d:"Easy",  e:"The Championships, Wimbledon, held at the All England Club, is the oldest and most prestigious Grand Slam."},
+    {q:"How many holes comprise a standard round of golf?",                  o:["9","12","18","24"],                                                         a:2,d:"Easy",  e:"A standard round of golf consists of eighteen holes."},
+    {q:"By what name are three consecutive strikes in ten-pin bowling known?", o:["Hat trick","Turkey","Triple crown","Perfect set"],                        a:1,d:"Medium",e:"Three consecutive strikes in bowling is termed a turkey, a phrase of American origin."},
+    {q:"Which athlete claimed eight gold medals at the 2008 Beijing Olympic Games?", o:["Mark Spitz","Michael Phelps","Carl Lewis","Usain Bolt"],             a:1,d:"Hard",  e:"Michael Phelps won eight gold medals at the Beijing Games, the most achieved by any athlete at a single Olympiad."},
+    {q:"How many points does a touchdown score in American football?",       o:["3","5","6","7"],                                                            a:2,d:"Easy",  e:"A touchdown awards six points, after which the scoring team may attempt a conversion for one or two additional points."},
+    {q:"What is the national sport of Japan?",                               o:["Judo","Sumo","Karate","Kendō"],                                             a:1,d:"Medium",e:"Sumo wrestling is Japan's national sport and has been practised for many centuries."},
+    {q:"How many Grand Slam singles titles did Serena Williams claim during her career?", o:["20","21","23","25"],                                            a:2,d:"Medium",e:"Serena Williams accumulated 23 Grand Slam singles titles, the most of any player in the Open Era."},
+    {q:"In which athletic discipline is the Fosbury Flop employed?",         o:["Pole vault","Long jump","High jump","Gymnastics"],                          a:2,d:"Medium",e:"The Fosbury Flop is a technique for clearing the bar in the high jump, popularised by Dick Fosbury at the 1968 Olympics."},
+  ],
+  technology:[
+    {q:"For what does the abbreviation HTTP stand?",                         o:["HyperText Transfer Protocol","High Transfer Text Process","Hybrid Text Transmission Program","HyperText Technical Process"], a:0,d:"Easy",  e:"HTTP — HyperText Transfer Protocol — is the foundational protocol for transmitting data on the World Wide Web."},
+    {q:"Which organisation created the JavaScript programming language?",    o:["Microsoft","Google","Netscape","Sun Microsystems"],                         a:2,d:"Medium",e:"Brendan Eich developed JavaScript at Netscape Communications in 1995, completing it in a mere ten days."},
+    {q:"What does the abbreviation CPU denote?",                             o:["Central Processing Unit","Core Program Unit","Computer Processing Utility","Central Program Uplink"], a:0,d:"Easy",e:"CPU stands for Central Processing Unit, the principal component that executes instructions in a computer."},
+    {q:"In which year was the World Wide Web invented?",                     o:["1983","1987","1989","1993"],                                                a:2,d:"Medium",e:"Sir Tim Berners-Lee invented the World Wide Web in 1989 whilst working at CERN in Geneva."},
+    {q:"What is the binary representation of the decimal number ten?",       o:["1000","1010","0110","1100"],                                                a:1,d:"Medium",e:"The decimal number ten is represented in binary as 1010 (8 + 0 + 2 + 0 = 10)."},
+    {q:"Which corporation developed the Android operating system?",          o:["Samsung","Apple","Microsoft","Google"],                                     a:3,d:"Easy",  e:"Android was developed by Google and first released commercially in 2008."},
+    {q:"Which programming language is primarily employed for iOS application development?", o:["Kotlin","Java","Swift","Objective-C"],                        a:2,d:"Medium",e:"Swift, introduced by Apple in 2014, is the predominant language for developing applications on iOS."},
+    {q:"What does the abbreviation RAM stand for?",                          o:["Random Access Memory","Read Assigned Memory","Rapid Application Module","Registered Access Mode"], a:0,d:"Easy",e:"RAM — Random Access Memory — provides temporary storage for data used by programs currently in operation."},
+    {q:"Which program is generally regarded as the first computer virus?",   o:["ILOVEYOU","Creeper","Melissa","Morris Worm"],                               a:1,d:"Hard",  e:"The Creeper program of 1971 is widely considered the first computer virus, propagating via the ARPANET."},
+    {q:"Which corporation manufactures the Surface range of personal computers?", o:["Dell","Hewlett-Packard","Lenovo","Microsoft"],                         a:3,d:"Easy",  e:"The Microsoft Surface is a line of personal computing devices designed and produced by Microsoft."},
+    {q:"What does the abbreviation SQL stand for?",                          o:["Structured Query Language","Simple Question Logic","Standard Queue List","System Query Layer"], a:0,d:"Medium",e:"SQL — Structured Query Language — is the standard language for managing and querying relational databases."},
+    {q:"Which communication protocol is used as the standard for transmitting electronic mail?", o:["FTP","SMTP","HTTP","IMAP"],                             a:1,d:"Medium",e:"SMTP — Simple Mail Transfer Protocol — is the standard protocol for the transmission of electronic mail."},
+    {q:"How many bits constitute a single byte?",                            o:["4","8","16","2"],                                                           a:1,d:"Easy",  e:"One byte is composed of eight bits and serves as the standard unit of digital information."},
+    {q:"By what name was Google's original web-page ranking algorithm known?", o:["EdgeRank","TrustRank","PageRank","RankBrain"],                            a:2,d:"Medium",e:"PageRank, named after co-founder Larry Page, was the algorithm Google originally employed to rank search results."},
+    {q:"What does the abbreviation API stand for?",                          o:["Application Programming Interface","Automated Process Integration","Applied Program Index","Application Protocol Interchange"], a:0,d:"Medium",e:"API — Application Programming Interface — defines the protocols and rules by which software components communicate."},
+  ],
+  food:[
+    {q:"Which country is credited with the invention of pizza?",             o:["France","Greece","Spain","Italy"],                                          a:3,d:"Easy",  e:"The modern pizza as we know it originated in Naples, Italy, during the eighteenth and nineteenth centuries."},
+    {q:"What is the principal ingredient of guacamole?",                     o:["Cucumber","Avocado","Courgette","Mango"],                                   a:1,d:"Easy",  e:"Guacamole is composed primarily of mashed avocado and traces its origins to Aztec cuisine."},
+    {q:"From which country does sushi originate?",                           o:["China","Korea","Thailand","Japan"],                                         a:3,d:"Easy",  e:"Sushi originated in Japan and has since become one of the world's most widely enjoyed cuisines."},
+    {q:"What variety of dough is employed in the making of a croissant?",    o:["Choux","Shortcrust","Puff","Laminated yeast dough"],                        a:3,d:"Hard",  e:"The croissant is fashioned from laminated yeast-leavened dough, in which layers of dough and butter are folded repeatedly."},
+    {q:"Which spice is considered the most expensive in the world, by weight?", o:["Vanilla","Cardamom","Saffron","Turmeric"],                               a:2,d:"Medium",e:"Saffron may command a price exceeding five thousand dollars per pound, owing to the labour-intensive harvesting of crocus stigmas."},
+    {q:"What is the national dish of Spain?",                                o:["Gazpacho","Churros","Paella","Tortilla española"],                          a:2,d:"Medium",e:"Paella, a rice dish originating in Valencia, is broadly regarded as Spain's national dish."},
+    {q:"From which nut is marzipan produced?",                               o:["Cashew","Walnut","Pistachio","Almond"],                                     a:3,d:"Medium",e:"Marzipan is prepared from ground almonds and sugar, with origins traceable to the Middle East and medieval Europe."},
+    {q:"What does the Scoville scale measure?",                              o:["The sweetness of fruit","The bitterness of coffee","The piquancy of chilli peppers","The acidity of wine"], a:2,d:"Medium",e:"The Scoville scale quantifies the concentration of capsaicin in chilli peppers, indicating their degree of heat."},
+    {q:"In which region of the world did chocolate originate?",              o:["West Africa","Switzerland","Belgium","Mesoamerica"],                        a:3,d:"Medium",e:"Chocolate traces its origins to Mesoamerica, where the Olmec, Maya, and Aztec civilisations cultivated the cacao tree."},
+    {q:"Which gas is responsible for causing bread dough to rise?",          o:["Oxygen","Methane","Carbon dioxide","Nitrogen"],                             a:2,d:"Easy",  e:"Yeast produces carbon dioxide during fermentation; this gas becomes trapped within the dough, causing it to rise."},
+    {q:"What is the primary ingredient in hummus?",                          o:["Lentils","White beans","Chickpeas","Broad beans"],                          a:2,d:"Easy",  e:"Hummus is prepared chiefly from cooked chickpeas, blended with tahini, lemon juice, and garlic."},
+    {q:"In which country was champagne developed?",                          o:["Italy","Spain","Germany","France"],                                         a:3,d:"Medium",e:"Champagne was developed in the Champagne region of north-eastern France during the seventeenth century."},
+    {q:"How is umami most commonly described?",                              o:["Sour","Sweet","Savoury","Bitter"],                                          a:2,d:"Medium",e:"Umami is the fifth basic taste, described as savoury or meaty, and is associated with the presence of glutamates."},
+    {q:"Which legume forms the basis of traditional Japanese miso paste?",   o:["Black bean","Kidney bean","Soybean","Adzuki bean"],                         a:2,d:"Medium",e:"Miso is produced by fermenting soybeans with salt and kōji mould, a process that may last from weeks to years."},
+    {q:"Which nation is the world's foremost producer of coffee?",           o:["Colombia","Vietnam","Ethiopia","Brazil"],                                   a:3,d:"Medium",e:"Brazil has been the world's leading coffee-producing nation for more than one hundred and fifty years."},
+  ],
+  mythology:[
+    {q:"Who is the Greek god of the sea?",                                   o:["Zeus","Ares","Hades","Poseidon"],                                           a:3,d:"Easy",  e:"Poseidon rules the sea, earthquakes, and horses in the Greek pantheon."},
+    {q:"What name is given to the great world tree in Norse mythology?",     o:["Bifrost","Yggdrasil","Midgard","Asgard"],                                   a:1,d:"Medium",e:"Yggdrasil is the immense sacred ash tree at the centre of Norse cosmology, connecting the nine worlds."},
+    {q:"Who is the Roman counterpart of the Greek god Zeus?",                o:["Mars","Neptune","Mercury","Jupiter"],                                       a:3,d:"Easy",  e:"Jupiter is the king of the Roman gods and direct counterpart to the Greek god Zeus."},
+    {q:"In Egyptian mythology, who presides over the realm of the dead?",    o:["Ra","Osiris","Horus","Set"],                                                a:1,d:"Easy",  e:"Osiris is the Egyptian god of the dead, the afterlife, and resurrection."},
+    {q:"Which mythological creature possesses the body of a lion and the head of a human?", o:["Chimera","Manticore","Griffin","Sphinx"],                    a:3,d:"Medium",e:"The Sphinx has the body of a lion and the head of a human, and is famed in Greek myth for posing riddles to travellers near Thebes."},
+    {q:"Who, in Greek mythology, released the world's evils by opening a forbidden vessel?", o:["Medusa","Circe","Pandora","Hera"],                          a:2,d:"Easy",  e:"Pandora, overcome by curiosity, opened the pithos — often rendered in English as a box — releasing all manner of evils into the world."},
+    {q:"Which hero of Greek mythology slew the Minotaur?",                   o:["Perseus","Achilles","Odysseus","Theseus"],                                  a:3,d:"Medium",e:"Theseus killed the Minotaur within the labyrinth of Crete, aided by the thread provided by Ariadne."},
+    {q:"By what name is Thor's hammer known in Norse mythology?",             o:["Gungnir","Mjolnir","Excalibur","Durandal"],                                 a:1,d:"Easy",  e:"Mjölnir is Thor's legendary hammer, forged by the dwarven brothers Sindri and Brokkr."},
+    {q:"Who is the Destroyer within the Hindu trinity of Brahma, Vishnu, and Shiva?", o:["Brahma","Vishnu","Shiva","Indra"],                                a:2,d:"Medium",e:"Shiva occupies the role of Destroyer within the Hindu Trimurti, alongside Brahma the Creator and Vishnu the Preserver."},
+    {q:"Which hero of Greek mythology was rendered invulnerable save for one heel?", o:["Heracles","Perseus","Jason","Achilles"],                            a:3,d:"Easy",  e:"Achilles was made invulnerable everywhere but his heel, the site of the wound that ultimately caused his death."},
+    {q:"Which river, in Greek mythology, forms the boundary of the Underworld?", o:["Lethe","Phlegethon","Acheron","Styx"],                                  a:3,d:"Hard",  e:"The River Styx marks the boundary between the living world and the realm of the dead; souls are ferried across it by Charon."},
+    {q:"Who is the goddess of the sun in Japanese Shintō mythology?",        o:["Izanami","Benzaiten","Amaterasu","Inari"],                                  a:2,d:"Medium",e:"Amaterasu, the Great Divinity Illuminating Heaven, is the Shintō goddess of the sun and among the most revered deities in Japan."},
+    {q:"Which creature of Greek mythology could petrify those who gazed upon it?", o:["Hydra","Scylla","Basilisk","Medusa"],                                 a:3,d:"Easy",  e:"Medusa, one of the three Gorgons, had the power to turn any who looked directly at her into stone."},
+    {q:"Who serves as the trickster deity in Norse mythology?",               o:["Odin","Loki","Tyr","Baldr"],                                               a:1,d:"Easy",  e:"Loki, a shape-shifter of great cunning, is the trickster god of Norse mythology."},
+    {q:"What is the name of the feathered serpent deity of the Aztec pantheon?", o:["Huitzilopochtli","Tlaloc","Quetzalcoatl","Tezcatlipoca"],               a:2,d:"Hard",  e:"Quetzalcoatl, the feathered serpent, was one of the most significant and venerated deities in Aztec religion."},
+  ],
+};
+
+/* ── STATE ──────────────────────────────────────────────────────────── */
+let selectedTopic = null;
+let questions     = [];
+let qIndex        = 0;
+let correct       = 0;
+let wrong         = 0;
+let answered      = false;
+
+/* ── UTILITIES ───────────────────────────────────────────────────────── */
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function toRoman(n){
+  return ROMAN[n] || String(n+1);
+}
+
+function getGrade(ratio){
+  if(ratio>=1.0) return 'A perfect score — truly exemplary.';
+  if(ratio>=0.8) return 'An excellent result — well above par.';
+  if(ratio>=0.6) return 'A creditable performance — above average.';
+  if(ratio>=0.4) return 'A modest result — further study is recommended.';
+  return 'A poor result — considerable revision is required.';
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('loading').classList.remove('active');
+  const el=document.getElementById(id);
+  if(el){ el.classList.remove('active'); void el.offsetWidth; el.classList.add('active'); }
+}
+
+function updateScoreBar(){
+  const total=correct+wrong;
+  document.getElementById('sb-correct').textContent=correct;
+  document.getElementById('sb-wrong').textContent=wrong;
+  document.getElementById('sb-pct').textContent=total>0?Math.round((correct/total)*100)+'%':'—';
+  document.getElementById('score-bar').classList.toggle('visible',total>0);
+}
+
+/* ── BUILD TOPIC GRID ─────────────────────────────────────────────── */
+(function buildGrid(){
+  const grid=document.getElementById('topic-grid');
+  TOPICS.forEach(t=>{
+    const card=document.createElement('div');
+    card.className='topic-card';
+    card.dataset.id=t.id;
+    card.innerHTML=`<span class="topic-emoji-wrap">${t.emoji}</span><span class="topic-lbl">${t.label}</span>`;
+    card.addEventListener('click',()=>selectTopic(t.id));
+    grid.appendChild(card);
+  });
+})();
+
+/* ── TOPIC SELECTION ─────────────────────────────────────────────── */
+function selectTopic(id){
+  selectedTopic=id;
+  document.querySelectorAll('.topic-card').forEach(c=>{
+    c.classList.toggle('selected',c.dataset.id===id);
+  });
+  document.getElementById('btn-start').disabled=false;
+}
+
+document.getElementById('btn-start').addEventListener('click',()=>{
+  if(selectedTopic) startGame();
+});
+
+/* ── GAME FLOW ────────────────────────────────────────────────────── */
+function startGame(){
+  questions=shuffle(Q[selectedTopic]).slice(0,PER_ROUND);
+  qIndex=correct=wrong=0;
+  answered=false;
+
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('score-bar').classList.remove('visible');
+  const loading=document.getElementById('loading');
+  loading.classList.add('active');
+
+  setTimeout(()=>{
+    loading.classList.remove('active');
+    renderQuestion();
+    showScreen('game');
+  }, 650);
+}
+
+function renderQuestion(){
+  const q=questions[qIndex];
+  answered=false;
+
+  // progress
+  const pct=Math.round((qIndex/PER_ROUND)*100);
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=`${toRoman(qIndex)} of ${toRoman(PER_ROUND-1)+' '}`.trim().replace(/\s+/,' ');
+  // simpler label
+  document.getElementById('progress-label').textContent=`${ROMAN[qIndex]} of ${ROMAN[PER_ROUND-1]}`;
+
+  // header
+  document.getElementById('q-num').textContent=`Question the ${ORDINALS[qIndex]}`;
+  const diffEl=document.getElementById('q-diff');
+  diffEl.textContent=q.d;
+  diffEl.className=`q-diff diff-${q.d}`;
+
+  // text
+  document.getElementById('q-text').textContent=q.q;
+
+  // answers
+  const container=document.getElementById('answers');
+  container.innerHTML='';
+  q.o.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='ans-btn';
+    btn.innerHTML=`<span class="ans-key">${KEYS[i]}</span>${opt}`;
+    btn.addEventListener('click',()=>selectAnswer(i));
+    container.appendChild(btn);
+  });
+
+  // reset feedback & next
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('btn-next').className='btn-advance';
+}
+
+function selectAnswer(idx){
+  if(answered) return;
+  answered=true;
+
+  const q=questions[qIndex];
+  const btns=document.querySelectorAll('.ans-btn');
+  const isCorrect=idx===q.a;
+
+  btns.forEach((btn,i)=>{
+    btn.disabled=true;
+    if(i===q.a)      btn.classList.add('correct');
+    else if(i===idx) btn.classList.add('wrong');
+    else             btn.classList.add('reveal');
+  });
+
+  if(isCorrect) correct++; else wrong++;
+  updateScoreBar();
+
+  // feedback
+  const fb=document.getElementById('feedback');
+  document.getElementById('fb-verdict').textContent=isCorrect?'Correct':'Incorrect';
+  document.getElementById('fb-text').textContent=q.e;
+  fb.className=`feedback visible ${isCorrect?'correct-fb':'wrong-fb'}`;
+
+  // progress fill update
+  document.getElementById('progress-fill').style.width=`${((qIndex+1)/PER_ROUND)*100}%`;
+
+  // next button
+  const nextBtn=document.getElementById('btn-next');
+  nextBtn.textContent=(qIndex+1<PER_ROUND)?'Proceed →':'View Results →';
+  nextBtn.classList.add('visible');
+}
+
+function nextQuestion(){
+  qIndex++;
+  if(qIndex>=PER_ROUND) showResults();
+  else renderQuestion();
+}
+
+/* ── RESULTS ─────────────────────────────────────────────────────── */
+function showResults(){
+  const pct=Math.round((correct/PER_ROUND)*100);
+
+  document.getElementById('res-num').textContent=correct;
+  document.getElementById('res-denom').textContent=`of ${PER_ROUND} correct`;
+  document.getElementById('res-grade').textContent=getGrade(correct/PER_ROUND);
+  document.getElementById('res-correct').textContent=correct;
+  document.getElementById('res-wrong').textContent=wrong;
+  document.getElementById('res-pct').textContent=pct+'%';
+
+  showScreen('results');
+}
+
+function playAgain(){ startGame(); }
+function goHome(){
+  document.getElementById('score-bar').classList.remove('visible');
+  showScreen('home');
+}
+</script>
+</body>
+</html>
